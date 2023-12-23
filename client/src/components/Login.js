@@ -1,9 +1,12 @@
 import { Box, Button, TextField, Typography } from '@mui/material'
 import axios from 'axios'
 import React, { useState } from 'react'
+import { useDispatch } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
+import { authActions } from '../store'
 
 const Login = () => {
+  const dispatch = useDispatch()
   const navigate = useNavigate()
   const [input, setInput] = useState({
     email: "",
@@ -30,7 +33,9 @@ const Login = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     // console.log(input);
-    sendRequest().then(() => navigate("/user"))
+    sendRequest()
+      .then(() => dispatch(authActions.login()))
+      .then(() => navigate("/user"))
   }
 
   return (

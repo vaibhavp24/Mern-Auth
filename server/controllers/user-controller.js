@@ -1,7 +1,6 @@
 const User = require('../model/User')
 const bcrypt = require("bcryptjs")
 const jwt = require('jsonwebtoken')
-const JWT_SECRET_KEY = "MyKey"
 
 const signup = async (req, res, next) => {
     const { name, email, password } = req.body
@@ -55,22 +54,17 @@ const login = async (req, res, next) => {
         return res.status(400).json({ message: "Invalid Email/Password" });
     }
 
-    const token = jwt.sign({ id: existingUser._id }, JWT_SECRET_KEY, {
-        expiresIn: "30s",
+    const token = jwt.sign({ id: existingUser._id }, process.env.JWT_SECRET_KEY, {
+        expiresIn: "15m",
     });
 
-    // Clear the cookie on the frontend by setting it to an empty string
-    res.cookie(String(existingUser._id), "", {
-        path: "/",
-        expires: new Date(0), // Set the expiration date to the past
-        httpOnly: true,
-        sameSite: "lax",
-    });
+    if (req.cookies[`${existingUser._id}`]) {
+        req.cookies[`${existingUser._id}`] = ""
+    }
 
-    // Set the new token cookie
     res.cookie(String(existingUser._id), token, {
         path: "/",
-        expires: new Date(Date.now() + 1000 * 30), // Set a new expiration date
+        expires: new Date(Date.now() + 1000 * 60 * 15),
         httpOnly: true,
         secure: true,
         sameSite: "strict",
@@ -83,18 +77,15 @@ const login = async (req, res, next) => {
 const verifyToken = (req, res, next) => {
     const cookies = req.headers.cookie
     const token = cookies.split("=")[1]
-    console.log("token ",token);
     if (!token) {
         console.log("No token found");
         res.status(404).json({ message: "No token found" })
     }
-    jwt.verify(token, JWT_SECRET_KEY, (err, user) => {
-        console.log(err);
+    jwt.verify(String(token), process.env.JWT_SECRET_KEY, (err, user) => {
         if (err) {
             console.log("Invalid token Error");
             return res.status(400).json({ message: "Invalid Token" })
         }
-        // console.log(user.id);
         req.id = user.id
     })
     next()
@@ -117,7 +108,25 @@ const getUser = async (req, res, next) => {
     return res.status(200).json({ user })
 }
 
+const logout = (req, res, next) => {
+    const cookies = req.headers.cookie
+    const prevToken = cookies.split("=")[1]
+    if (!prevToken) {
+        return res.status(400).json({ message: "Couldn't find token" })
+    }
+    jwt.verify(String(prevToken), process.env.JWT_SECRET_KEY, (err, user) => {
+        if (err) {
+            console.log(err);
+            return res.status(403).json({ message: "Authentication Failed" })
+        }
+        res.clearCookie(`${user.id}`)
+        req.cookies[`${user.id}`] = ""
+        return res.status(200).json({ message: "Successfully Logged Out" })
+    })
+}
+
 exports.signup = signup
 exports.login = login
 exports.verifyToken = verifyToken
 exports.getUser = getUser
+exports.logout = logout

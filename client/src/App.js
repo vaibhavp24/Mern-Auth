@@ -5,8 +5,11 @@ import Login from './components/Login';
 import React from 'react';
 import Signup from './components/Signup';
 import Welcome from './components/Welcome';
+import { useSelector } from 'react-redux';
 
 function App() {
+  const isLoggedIn = useSelector(state => state.isLoggedIn)
+  console.log(isLoggedIn);
   return (
     <React.Fragment>
       <header>
@@ -16,7 +19,7 @@ function App() {
         <Routes>
           <Route path='/login' element={<Login />} />
           <Route path='/signup' element={<Signup />} />
-          <Route path='/user' element={<Welcome />} />
+          {isLoggedIn && <Route path='/user' element={<Welcome />} />}
         </Routes>
       </main>
     </React.Fragment>

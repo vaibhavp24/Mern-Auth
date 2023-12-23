@@ -9,6 +9,7 @@ const Welcome = () => {
     const res = await axios.get("http://localhost:5000/api/user", {
       withCredentials: true,
     }).catch(err => console.log(err))
+
     const data = await res.data
     return data
   }
